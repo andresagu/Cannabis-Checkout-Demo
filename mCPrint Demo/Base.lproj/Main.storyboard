@@ -30,6 +30,12 @@
                                 </textAttributes>
                                 <items>
                                     <navigationItem title="Scale Checkout" id="o0d-cK-4Br">
+                                        <barButtonItem key="leftBarButtonItem" title="Print Barcode Samples" id="mzQ-T0-6EB">
+                                            <color key="tintColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                            <connections>
+                                                <action selector="printBarcodeSamples:" destination="BYZ-38-t0r" id="DRv-jS-QwB"/>
+                                            </connections>
+                                        </barButtonItem>
                                         <barButtonItem key="rightBarButtonItem" systemItem="refresh" id="4zw-vG-J4o">
                                             <color key="tintColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                                             <connections>
@@ -45,7 +51,7 @@
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                             </tableView>
                             <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="headTruncation" hasAttributedTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="GlH-3g-TmO">
-                                <rect key="frame" x="522" y="581" width="482" height="50"/>
+                                <rect key="frame" x="522" y="609" width="482" height="50"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                                 <state key="normal">
@@ -105,7 +111,7 @@
                                 <nil key="highlightedColor"/>
                             </label>
                             <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="gQM-dC-DWT">
-                                <rect key="frame" x="522" y="649" width="482" height="50"/>
+                                <rect key="frame" x="522" y="667" width="482" height="50"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="20"/>
@@ -117,6 +123,13 @@
                                     <action selector="pressCashDrawerButton:" destination="BYZ-38-t0r" eventType="touchUpInside" id="9gM-lv-4jV"/>
                                 </connections>
                             </button>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Scale Weight" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="L9d-q9-q6C">
+                                <rect key="frame" x="522" y="557" width="482" height="44"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="30"/>
+                                <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <nil key="highlightedColor"/>
+                            </label>
                         </subviews>
                         <color key="backgroundColor" red="0.72549019607843135" green="0.89411764705882357" blue="0.76470588235294112" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
@@ -132,6 +145,7 @@
                         <outlet property="finalPriceLabel" destination="pFA-IY-1Sm" id="7Yb-00-ymr"/>
                         <outlet property="navigationBar" destination="XxI-md-d1a" id="LU5-D3-Nr8"/>
                         <outlet property="tableView" destination="0hs-Xg-eRx" id="DSj-79-Wia"/>
+                        <outlet property="weightLabel" destination="L9d-q9-q6C" id="th0-Gc-SCT"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>

@@ -2,9 +2,10 @@
 //  AppDelegate.m
 //  mpopGroceryDemo
 //
-//  Created by Guillermo Cubero on 11/28/17.
-//  Copyright © 2017 Guillermo Cubero. All rights reserved.
+//  Created by Andres Aguaiza on 3/29/19.
+//  Copyright © 2019 Andres Aguaiza. All rights reserved.
 //
+
 
 #import "AppDelegate.h"
 
@@ -62,7 +63,7 @@
 - (void)loadParam {
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
     
-    [userDefaults registerDefaults:[NSDictionary dictionaryWithObject:@"BT:mPOP"                           forKey:@"portName"]];
+    [userDefaults registerDefaults:[NSDictionary dictionaryWithObject:@"USB:mC-Print3"                           forKey:@"portName"]];
     [userDefaults registerDefaults:[NSDictionary dictionaryWithObject:@""                           forKey:@"portSettings"]];
     [userDefaults registerDefaults:[NSDictionary dictionaryWithObject:@""                           forKey:@"modelName"]];
     [userDefaults registerDefaults:[NSDictionary dictionaryWithObject:@""                           forKey:@"macAddress"]];

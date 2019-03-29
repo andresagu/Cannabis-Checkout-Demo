@@ -2,9 +2,10 @@
 //  AppDelegate.h
 //  mpopGroceryDemo
 //
-//  Created by Guillermo Cubero on 11/28/17.
-//  Copyright © 2017 Guillermo Cubero. All rights reserved.
+//  Created by Andres Aguaiza on 3/29/19.
+//  Copyright © 2019 Andres Aguaiza. All rights reserved.
 //
+
 
 #import <UIKit/UIKit.h>
 #import <StarIO_Extension/StarIoExt.h>

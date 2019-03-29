@@ -2,9 +2,10 @@
 //  ViewController.h
 //  mpopGroceryDemo
 //
-//  Created by Guillermo Cubero on 11/28/17.
-//  Copyright © 2017 Guillermo Cubero. All rights reserved.
+//  Created by Andres Aguaiza on 3/29/19.
+//  Copyright © 2019 Andres Aguaiza. All rights reserved.
 //
+
 
 #import <UIKit/UIKit.h>
 
@@ -12,9 +13,12 @@
 
 #import <StarMgsIO/StarMgsIO.h>
 
-@interface ViewController : UIViewController <StarIoExtManagerDelegate, UITableViewDelegate, UITableViewDataSource, UIAlertViewDelegate, UITextFieldDelegate>
+@interface ViewController : UIViewController <StarIoExtManagerDelegate, UITableViewDelegate, UITableViewDataSource, UIAlertViewDelegate, UITextFieldDelegate, STARScaleManagerDelegate, STARScaleDelegate>
 
 @property (weak, nonatomic) IBOutlet UILabel *finalPriceLabel;
+@property(nonatomic) STARScale *scale;
+
+@property (weak, nonatomic) IBOutlet UILabel *weightLabel;
 
 
 @end

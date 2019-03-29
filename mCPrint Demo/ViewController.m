@@ -2,8 +2,8 @@
 //  ViewController.m
 //  mpopGroceryDemo
 //
-//  Created by Guillermo Cubero on 11/28/17.
-//  Copyright © 2017 Guillermo Cubero. All rights reserved.
+//  Created by Andres Aguaiza on 3/29/19.
+//  Copyright © 2019 Andres Aguaiza. All rights reserved.
 //
 
 #import "ViewController.h"
@@ -31,11 +31,11 @@ typedef NS_ENUM(NSInteger, CellParamIndex) {
 - (IBAction)pushRefreshButton:(id)sender;
 - (IBAction)pressPrintButton:(id)sender;
 - (IBAction)pressCashDrawerButton:(id)sender;
-- (IBAction)pressCannabisLabelButton:(id)sender;
 
 /* STAR IO */
 @property (nonatomic) StarIoExtManager *starIoExtManager;
 @property SMPort *port;
+
 
 /* STAR SCALE */
 @property(nonatomic) NSMutableArray<STARScale *> *contents;
@@ -52,7 +52,37 @@ typedef NS_ENUM(NSInteger, CellParamIndex) {
 - (void)applicationWillResignActive;
 - (void)applicationDidBecomeActive;
 
+
+//Pricing Tracker and Weight Tracking
+@property(nonatomic) NSString *scaleW;
+
+@property(nonatomic) double pricePerGram;
+@property(nonatomic) double finalPrice;
+@property(nonatomic) NSString* priceToPrint;
+@property(nonatomic) NSString* barcodeDataOG;
+@property(nonatomic) NSString* barcodeDataBlue;
+@property(nonatomic) NSString* barcodeDataPurple;
+@property(nonatomic) NSString* barcodeDataGS;
+@property(nonatomic) NSString* barcodeDataSour;
+@property(nonatomic) NSString* barcodeDataGreen;
+@property(nonatomic) NSString* barcodeDataLights;
+@property(nonatomic) NSString* barcodeDataCooks;
+
+//Prices for the barcodes - will be calculated via the weight
+@property(nonatomic) double OGprice;
+@property(nonatomic) double BDprice;
+@property(nonatomic) double PHprice;
+@property(nonatomic) double GSprice;
+@property(nonatomic) double SDprice;
+@property(nonatomic) double GCprice;
+@property(nonatomic) double NLprice;
+@property(nonatomic) double CKprice;
+
+
+
 @end
+
+
 
 @implementation ViewController
 
@@ -60,11 +90,6 @@ typedef NS_ENUM(NSInteger, CellParamIndex) {
     [super viewDidLoad];
     
     [self initDictionaries];
-    
-    // delegate for textfield
-    // _scaleTextField.delegate = self;
-    // [_scaleTextField addTarget:self action:@selector(textChanged:) forControlEvents:UIControlEventEditingChanged];
-
     
     // Setup the tableview
     _tableView.delegate = self;
@@ -88,15 +113,29 @@ typedef NS_ENUM(NSInteger, CellParamIndex) {
     
     // Setup the printer delegate methods
     _starIoExtManager.delegate = self;
+
     
+    
+    
+    // Setup the ScaleManager delegate methods
+    STARScaleManager.sharedManager.delegate = self;
     
     // An arrray for storing discovered BLE scales
     _contents = [NSMutableArray new];
+    
     
 }
 
 - (void)viewDidAppear:(BOOL)animated {
     
+    // Start scanning for scales
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1 * NSEC_PER_SEC)), dispatch_get_main_queue(),^{
+        [STARScaleManager.sharedManager scanForScales];
+    });
+    
+    if (_connectedScale != nil) {
+        [STARScaleManager.sharedManager connectScale:_connectedScale];
+    }
 
 }
 
@@ -115,6 +154,8 @@ typedef NS_ENUM(NSInteger, CellParamIndex) {
 }
 
 - (void)applicationDidBecomeActive {
+    
+    
     [_cellArray removeAllObjects];
     [_tablePriceArray removeAllObjects];
     [_starIoExtManager disconnect];
@@ -133,6 +174,12 @@ typedef NS_ENUM(NSInteger, CellParamIndex) {
     }
     
     [_tableView reloadData];
+    
+    
+    //Adding scale connection check - adding connected scale to the manager
+    if (_connectedScale != nil) {
+        [STARScaleManager.sharedManager connectScale:_connectedScale];
+    }
     
     UIAlertController * alert = [UIAlertController
                                  alertControllerWithTitle:title
@@ -154,6 +201,10 @@ typedef NS_ENUM(NSInteger, CellParamIndex) {
 - (void)applicationWillResignActive {
     [_starIoExtManager disconnect];
     
+    //disconnect the scale manager & delegate methods when the application resigns
+    if (_connectedScale != nil) {
+        [STARScaleManager.sharedManager disconnectScale:_connectedScale];
+    }
   
 }
 
@@ -203,6 +254,9 @@ typedef NS_ENUM(NSInteger, CellParamIndex) {
     [self presentViewController:alert animated:YES completion:nil];
 }
 
+
+#pragma mark TABLE UI METHODS
+
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
     // Return the number of sections.
     return 1;
@@ -237,12 +291,13 @@ typedef NS_ENUM(NSInteger, CellParamIndex) {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
 }
 
+
+
+#pragma mark Barcode Processing Methods
 - (void)didBarcodeDataReceive:(StarIoExtManager *)manager data:(NSData *)data {
     NSLog(@"%s", __PRETTY_FUNCTION__);
     
     NSMutableString *text = [NSMutableString stringWithString:@""];
-    
-    //NSLog(@"yoooooooo");
  
  
     const uint8_t *p = data.bytes;
@@ -326,9 +381,6 @@ typedef NS_ENUM(NSInteger, CellParamIndex) {
     
     _finalPriceLabel.text = [NSString stringWithFormat:@"%.02lf",[sum doubleValue]];
     
-                             
-    
-    
     
     
     [_tableView reloadData];
@@ -339,33 +391,7 @@ typedef NS_ENUM(NSInteger, CellParamIndex) {
     [_tableView selectRowAtIndexPath:indexPath animated:YES scrollPosition:UITableViewScrollPositionBottom];
     [_tableView deselectRowAtIndexPath:indexPath animated:YES];
   
-    
-    /*
-    ISDCBBuilder *displayBuilder = [StarIoExt createDisplayCommandBuilder:StarIoExtDisplayModelSCD222];
-    [displayBuilder appendClearScreen];
-    [displayBuilder appendData:(NSData *)[text dataUsingEncoding:NSASCIIStringEncoding]];
-    
-    [displayBuilder appendSpecifiedPosition:14 y:1];
-    [displayBuilder appendData:(NSData *)[@"@ $10/g" dataUsingEncoding:NSASCIIStringEncoding]];
-    
-    [displayBuilder appendSpecifiedPosition:0 y:2];
-    [displayBuilder appendData:(NSData *)[_currentWeight dataUsingEncoding:NSASCIIStringEncoding]];
-    
-    [displayBuilder appendSpecifiedPosition:14 y:2];
-    [displayBuilder appendData:(NSData *)[_price dataUsingEncoding:NSASCIIStringEncoding]];
-    
-    NSData *commands = [displayBuilder.passThroughCommands copy];
-    
-    [_starIoExtManager.lock lock];
-    
-    [Communication sendCommands:commands port:_starIoExtManager.port completionHandler:^(BOOL result, NSString *title, NSString *message) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            // do nothing, continue
-            [_starIoExtManager.lock unlock];
-        });
-    }];
-     
-     */
+
 }
 
 
@@ -394,6 +420,8 @@ typedef NS_ENUM(NSInteger, CellParamIndex) {
                   };
 }
 
+
+#pragma mark Star EXT Manager delegate methods
 - (void)didPrinterImpossible:(StarIoExtManager *)manager {
     NSLog(@"%s", __PRETTY_FUNCTION__);
     
@@ -480,10 +508,12 @@ typedef NS_ENUM(NSInteger, CellParamIndex) {
     NSLog(@"%s", __PRETTY_FUNCTION__);
 }
 
+
+
+#pragma mark Printer methods
+
+//Creates a sample receipt - hardcoded and resets the table elements
 - (IBAction)pressPrintButton:(id)sender {
-    
-   
-    
     
     ISCBBuilder *receiptBuilder = [StarIoExt createCommandBuilder:StarIoExtEmulationStarPRNT];
     
@@ -553,7 +583,6 @@ typedef NS_ENUM(NSInteger, CellParamIndex) {
                           if (result == NO) { [self presentViewController:alert animated:YES completion:nil]; }
                           [self->_starIoExtManager.lock unlock];
                           
-                          //self.blind = NO;
             });
         }];
     });
@@ -582,10 +611,246 @@ typedef NS_ENUM(NSInteger, CellParamIndex) {
                 
                 [alertView show];
             }
-            //[_starIoExtManager.lock unlock];
         });
     }];
 }
 
+-(void)sendDataToDisplay{
+    
+    ISDCBBuilder *displayBuilder = [StarIoExt createDisplayCommandBuilder:StarIoExtDisplayModelSCD222];
+    [displayBuilder appendClearScreen];
+    [displayBuilder appendSpecifiedPosition:1 y:1];
+    [displayBuilder appendData:(NSData *)[@"Weight: " dataUsingEncoding:NSASCIIStringEncoding]];
+    [displayBuilder appendData:(NSData *)[_scaleW dataUsingEncoding:NSASCIIStringEncoding]];
+    
+    
+    NSData *commands = [displayBuilder.passThroughCommands copy];
+    
+    [_starIoExtManager.lock lock];
+    
+    [Communication sendCommands:commands port:_starIoExtManager.port completionHandler:^(BOOL result, NSString *title, NSString *message) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            // do nothing, continue
+            [self->_starIoExtManager.lock unlock];
+        });
+    }];
+    
+    
+    
+}
+
+#pragma mark Scale delegate methods that will update UI
+
+- (void)scale:(STARScale *)scale didReadScaleData:(STARScaleData *)scaleData error:(NSError *)error {
+    
+    _currentWeight = [NSString stringWithFormat:@"%.03lf %@", scaleData.weight, _unitDict[@(scaleData.unit)]];
+    _price = [NSString stringWithFormat:@"$%.02lf", scaleData.weight * 10];
+    _scaleW = [NSString stringWithFormat:@"%.02lf %@", scaleData.weight, _unitDict[@(scaleData.unit)]];
+    
+    _weightLabel.text = _scaleW;
+    //Set all the scale weights
+    
+    
+    [self setProductPrices:scaleData.weight];
+    
+    //_finalPrice  = scaleData.weight * OGpricePerGram;
+    
+    
+    
+    _priceToPrint = [NSString stringWithFormat:@"$%.02lf", _finalPrice];
+    
+    NSLog(@"%@", _scaleW);
+    NSLog(@"%@", _scaleWeight);
+    NSLog(@"%@", _priceToPrint);
+    
+    [self sendDataToDisplay];
+    
+    
+}
+
+- (void)scale:(STARScale *)scale didUpdateSetting:(STARScaleSetting)setting error:(NSError *)error {
+    if (error) {
+        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Failed"
+                                                                       message:nil
+                                                                preferredStyle:UIAlertControllerStyleAlert];
+        UIAlertAction *action = [UIAlertAction actionWithTitle:@"OK"
+                                                         style:UIAlertActionStyleDefault
+                                                       handler:nil];
+        [alert addAction:action];
+        
+        [self presentViewController:alert animated:YES completion:nil];
+    }
+}
+
+
+
+
+#pragma mark - STARScaleManagerDelegate
+
+- (void)manager:(STARScaleManager *)manager didDiscoverScale:(STARScale *)scale error:(NSError *)error {
+    [_contents addObject:scale];
+    
+    [STARScaleManager.sharedManager stopScan];
+    [STARScaleManager.sharedManager connectScale:scale];
+}
+
+- (void)manager:(STARScaleManager *)manager didConnectScale:(STARScale *)scale error:(NSError *)error {
+    NSLog(@"Scale %@ is now connected", scale.name);
+    
+    _connectedScale = scale.self;
+    _connectedScale.delegate = self;
+}
+
+- (void)manager:(STARScaleManager *)manager didDisconnectScale:(STARScale *)scale error:(NSError *)error {
+    NSLog(@"Scale %@ has been disconnected", scale.name);
+}
+
+
+/*Method that will hold the brute force calculation of prices to print on the sample barcodes that can be scanned into the POS
+didn't want to put this all in the scale weight method which is more or less where this calculation should happen*/
+-(void)setProductPrices
+                 :(double)currentScaleWeight {
+    
+    //Pricing constants for different strains
+    const double OGpricePerGram = 7.79;
+    const double BDpricePerGram = 9.39;
+    const double PHpricePerGram = 8.10;
+    const double GSpricePerGram = 8.14;
+    const double SDpricePerGram = 7.80;
+    const double GCpricePerGram = 6.59;
+    const double CKpricePerGram = 8.21;
+    const double NLpricePerGram = 7.11;
+    
+    _OGprice = OGpricePerGram * currentScaleWeight;
+    _BDprice = BDpricePerGram * currentScaleWeight;
+    _PHprice = PHpricePerGram * currentScaleWeight;
+    _GSprice = GSpricePerGram * currentScaleWeight;
+    _SDprice = SDpricePerGram * currentScaleWeight;
+    _GCprice = GCpricePerGram * currentScaleWeight;
+    _CKprice = CKpricePerGram * currentScaleWeight;
+    _NLprice = NLpricePerGram * currentScaleWeight;
+    
+}
+
+-(NSData *)createCanabisBarcodes{
+    
+    if(_priceToPrint != nil){
+
+            _barcodeDataOG = [@"{BOG!" stringByAppendingString:[NSString stringWithFormat:@"$%.02lf", _OGprice]];
+     
+            _barcodeDataBlue = [@"{BBD!" stringByAppendingString:[NSString stringWithFormat:@"$%.02lf", _BDprice]];
+
+            _barcodeDataPurple= [@"{BPH!" stringByAppendingString:[NSString stringWithFormat:@"$%.02lf", _PHprice]];
+
+            _barcodeDataGS= [@"{BPX!" stringByAppendingString:[NSString stringWithFormat:@"$%.02lf", _GSprice]];
+ 
+            _barcodeDataSour= [@"{BSD!" stringByAppendingString:[NSString stringWithFormat:@"$%.02lf", _SDprice]];
+
+            _barcodeDataGreen= [@"{BGC!" stringByAppendingString:[NSString stringWithFormat:@"$%.02lf", _GCprice]];
+        
+            _barcodeDataLights= [@"{BNL!" stringByAppendingString:[NSString stringWithFormat:@"$%.02lf", _CKprice]];
+
+            _barcodeDataCooks= [@"{BCK!" stringByAppendingString:[NSString stringWithFormat:@"$%.02lf", _NLprice]];
+    }
+    else{
+        NSLog(@"please weigh something");
+    }
+    
+    //builder
+    ISCBBuilder *Ticket = [StarIoExt createCommandBuilder:StarIoExtEmulationStarPRNT];
+    NSStringEncoding encoding = NSASCIIStringEncoding;
+    
+    [Ticket beginDocument];
+    
+    [Ticket appendMultipleWidth:2];
+    [Ticket appendMultipleHeight:2];
+    [Ticket appendAlignment:SCBAlignmentPositionCenter];
+    [Ticket appendData:[@"Please scan this ticekt at checkout" dataUsingEncoding:encoding]];
+    [Ticket appendMultipleWidth:4];
+    [Ticket appendMultipleHeight:4];
+    [Ticket appendAlignment:SCBAlignmentPositionCenter];
+    [Ticket appendLineFeed:2];
+    [Ticket appendDataWithEmphasis:[_scaleW dataUsingEncoding:encoding]];
+    [Ticket appendLineFeed];
+    [Ticket appendMultipleHeight:1];
+    [Ticket appendMultipleWidth:1];
+    [Ticket appendAlignment:SCBAlignmentPositionCenter];
+    [Ticket appendBarcodeData:[_barcodeDataOG dataUsingEncoding:NSASCIIStringEncoding]
+                    symbology:SCBBarcodeSymbologyCode128
+                        width:SCBBarcodeWidthMode2
+                       height:40
+                          hri:YES];
+    [Ticket appendLineFeed:2];
+    [Ticket appendBarcodeData:[_barcodeDataBlue dataUsingEncoding:NSASCIIStringEncoding]
+                    symbology:SCBBarcodeSymbologyCode128
+                        width:SCBBarcodeWidthMode2
+                       height:40
+                          hri:YES];
+    [Ticket appendLineFeed:2];
+    [Ticket appendBarcodeData:[_barcodeDataPurple dataUsingEncoding:NSASCIIStringEncoding]
+                    symbology:SCBBarcodeSymbologyCode128
+                        width:SCBBarcodeWidthMode2
+                       height:40
+                          hri:YES];
+    [Ticket appendLineFeed:2];
+    [Ticket appendBarcodeData:[_barcodeDataGS dataUsingEncoding:NSASCIIStringEncoding]
+                    symbology:SCBBarcodeSymbologyCode128
+                        width:SCBBarcodeWidthMode2
+                       height:40
+                          hri:YES];
+    [Ticket appendLineFeed:2];
+    [Ticket appendBarcodeData:[_barcodeDataSour dataUsingEncoding:NSASCIIStringEncoding]
+                    symbology:SCBBarcodeSymbologyCode128
+                        width:SCBBarcodeWidthMode2
+                       height:40
+                          hri:YES];
+    [Ticket appendLineFeed:2];
+    [Ticket appendBarcodeData:[_barcodeDataGreen dataUsingEncoding:NSASCIIStringEncoding]
+                    symbology:SCBBarcodeSymbologyCode128
+                        width:SCBBarcodeWidthMode2
+                       height:40
+                          hri:YES];
+    [Ticket appendLineFeed:2];
+    [Ticket appendBarcodeData:[_barcodeDataLights dataUsingEncoding:NSASCIIStringEncoding]
+                    symbology:SCBBarcodeSymbologyCode128
+                        width:SCBBarcodeWidthMode2
+                       height:40
+                          hri:YES];
+    [Ticket appendLineFeed:2];
+    [Ticket appendBarcodeData:[_barcodeDataCooks dataUsingEncoding:NSASCIIStringEncoding]
+                    symbology:SCBBarcodeSymbologyCode128
+                        width:SCBBarcodeWidthMode2
+                       height:40
+                          hri:YES];
+    
+    [Ticket appendLineFeed];
+    [Ticket appendCutPaper:SCBCutPaperActionPartialCutWithFeed];
+    [Ticket endDocument];
+    NSData *printJob = [Ticket.commands copy];
+    
+    
+    return printJob;
+}
+
+- (IBAction)printBarcodeSamples:(id)sender {
+    
+    NSData *printJob = [self createCanabisBarcodes];
+    
+    [_starIoExtManager.lock lock];
+    [Communication sendCommandsDoNotCheckCondition:printJob port:_starIoExtManager.port completionHandler:^(BOOL result, NSString *title, NSString *message) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (result == NO) {
+                UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:title message:message delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil];
+                
+                [alertView show];
+            }
+            [self->_starIoExtManager.lock unlock];
+        });
+    }];
+    
+    
+}
+
 
 @end
+

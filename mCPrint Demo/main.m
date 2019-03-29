@@ -2,9 +2,7 @@
 //  main.m
 //  mpopGroceryDemo
 //
-//  Created by Guillermo Cubero on 11/28/17.
-//  Copyright © 2017 Guillermo Cubero. All rights reserved.
-//
+
 
 #import <UIKit/UIKit.h>
 #import "AppDelegate.h"
